@@ -7,7 +7,7 @@ import { buildGeometry } from '../core/geometry.js';
 
 const GROUP_COLORS = {
   floor: '#3f8cff', diffuser: '#5ad1ff', nose: '#c9d6e8', body: '#9fb2c8',
-  sidepod: '#7d93ad', engineCover: '#8fa3bb', frontWing: '#ffb454',
+  rims: '#9aa7b8', detail: '#c4571e', frontWing: '#ffb454',
   rearWing: '#ff7a6e', wheels: '#39424e', cooling: '#63e6b0'
 };
 
@@ -191,7 +191,7 @@ export function createViewer(canvas) {
   function pressureTint(group) {
     const P = overlay.pressure;
     if (!P) return 1;
-    const map = { frontWing: P.cla.fw / 1.9, floor: P.cla.floor / 2.4, diffuser: P.cla.floor / 2.6, rearWing: P.cla.rw / 1.7, body: P.cla.body / 0.5, sidepod: P.cla.body / 0.6, cooling: 0.5 };
+    const map = { frontWing: P.cla.fw / 1.9, floor: P.cla.floor / 2.4, diffuser: P.cla.floor / 2.6, rearWing: P.cla.rw / 1.7, body: P.cla.body / 0.5, cooling: 0.5 };
     const t = Math.max(0.08, Math.min(1.25, map[group] ?? 0.6));
     return 0.35 + t * 0.9;
   }

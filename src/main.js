@@ -1,9 +1,10 @@
 // APEX LAB V4 — application shell: nav, top bar KPIs, onboarding, boot.
 
 import { h, clear, badge, fmtN } from './ui/dom.js';
-import { state, events, init, undo, redo, applyParams, persist } from './core/state.js';
+import { state, events, init, undo, redo, applyParams, applyShape, persist } from './core/state.js';
 import { carContext } from './ui/common.js';
 import { designScreen } from './ui/screens/design.js';
+import { studioScreen } from './ui/screens/studio.js';
 import { tunnelScreen } from './ui/screens/tunnel.js';
 import { lapsimScreen } from './ui/screens/lapsim.js';
 import { developScreen } from './ui/screens/develop.js';
@@ -15,6 +16,7 @@ import { decodeShareCode } from './storage/sharecode.js';
 
 const NAV = [
   { id: 'design', label: 'DESIGN', render: designScreen },
+  { id: 'studio', label: 'SHAPE STUDIO', render: studioScreen },
   { id: 'tunnel', label: 'WIND TUNNEL', render: tunnelScreen },
   { id: 'lapsim', label: 'LAP SIM', render: lapsimScreen },
   { id: 'develop', label: 'DEVELOP', render: developScreen },
@@ -48,7 +50,7 @@ function persistTick() {
 
 function exposeDebug() {
   // used by settings share-code import + e2e tests
-  window.__apexState = { state, applyParams, events };
+  window.__apexState = { state, applyParams, applyShape, events };
 }
 
 let topbarEl, mainEl;
@@ -127,7 +129,7 @@ function onboarding() {
   if (state.settings.onboardingDone) return;
   const steps = [
     ['1 · Welcome, Engineer', 'You are the aerodynamicist, vehicle dynamics engineer and technical director. This is your legal design envelope — everything you build must live inside it. The baseline car is deliberately unremarkable.'],
-    ['2 · Change something real', 'Open the FRONT WING in the part tree and move the main angle slider. Watch the WHAT CHANGED evidence in the status bar — every edit becomes geometry, then forces.'],
+    ['2 · Change something real', 'Open SHAPE STUDIO and drag the silhouette points — or open the FRONT WING in the part tree and move the main angle slider. Watch the WHAT CHANGED evidence in the status bar — every edit becomes geometry, then forces.'],
     ['3 · Test it', 'Go to the WIND TUNNEL. Run the Ride Height Sweep preset. Find the floor peak and the stall edge — downforce does NOT grow forever at low ride height.'],
     ['4 · Feel the consequence', 'Run the LAP SIM on Kestrel Ring. The coloured limiter map shows exactly which physical limit binds where.'],
     ['5 · Develop', 'In DEVELOP, create a prototype from a concept. It predicts with the same solver, tests with correlation noise, then you approve or reject. Install it and your car version evolves.'],

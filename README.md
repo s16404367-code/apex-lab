@@ -13,6 +13,10 @@ Runs **entirely client-side**: no backend, no API keys, no runtime network acces
 
 ---
 
+## Design the chassis in SHAPE STUDIO (V4.2)
+
+You don't tune the body with sliders — you **sculpt it**: drag the 12-point side-silhouette and plan-outline curves, watch the 3D car rebuild live, then take the shape to the wind tunnel and lap sim. The solver reads real descriptors integrated from your curves (true frontal area, fineness, deck upwash, nose droop). Share codes (`APEX2-…`) carry the whole sculpted shape.
+
 ## Quick start (local)
 
 ```bash

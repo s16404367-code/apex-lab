@@ -2,6 +2,7 @@
 // Owns the working CarModel, the R&D programme, weather, settings, undo/redo.
 
 import { CarModel, defaultParams, sanitizeParams } from './model.js';
+import { sanitizeShape, isValidShape } from './carShape.js';
 import { bus, deepClone } from './util.js';
 import { lsGet, lsSet } from '../storage/storage.js';
 import { newProgramme, installPrototype } from './dev.js';
@@ -14,6 +15,7 @@ export const events = bus();
 export const state = {
   cal: CAL,
   model: null,
+  shape: null, // sculpted chassis shape (Shape Studio); null = default shape
   programme: null,
   weather: { ...WEATHER_PRESETS.standard },
   weatherPreset: 'standard',
@@ -32,7 +34,8 @@ export const state = {
 export function init() {
   const saved = lsGet('state');
   const params = saved?.params ?? { ...BASE.params };
-  state.model = new CarModel(sanitizeParams(params ?? defaultParams()), { name: saved?.modelName ?? 'APEX-001 Baseline', versionId: saved?.versionId ?? 'APEX-000' });
+  state.shape = isValidShape(saved?.shape) ? sanitizeShape(saved.shape) : null;
+  state.model = new CarModel(sanitizeParams(params ?? defaultParams()), { name: saved?.modelName ?? 'APEX-001 Baseline', versionId: saved?.versionId ?? 'APEX-000', shape: state.shape });
   state.programme = saved?.programme ?? newProgramme(state.settings.resourceMode);
   if (saved?.settings) Object.assign(state.settings, saved.settings);
   if (saved?.weather) state.weather = saved.weather;
@@ -50,6 +53,7 @@ export function persist() {
   persistTimer = setTimeout(() => {
     lsSet('state', {
       params: state.model.params,
+      shape: state.shape,
       modelName: state.model.name,
       versionId: state.model.versionId,
       programme: state.programme,
@@ -60,36 +64,39 @@ export function persist() {
   }, 250);
 }
 
-/** Push current params onto undo stack before a change. */
+/** Push current params+shape onto undo stack before a change. */
 export function pushUndo() {
-  state.undoStack.push(JSON.stringify(state.model.params));
+  state.undoStack.push(JSON.stringify({ params: state.model.params, shape: state.shape }));
   if (state.undoStack.length > 60) state.undoStack.shift();
   state.redoStack.length = 0;
 }
 
 export function undo() {
   if (!state.undoStack.length) return false;
-  state.redoStack.push(JSON.stringify(state.model.params));
-  const params = JSON.parse(state.undoStack.pop());
-  applyParams(params, { silent: true, noUndo: true });
+  state.redoStack.push(JSON.stringify({ params: state.model.params, shape: state.shape }));
+  const snap = JSON.parse(state.undoStack.pop());
+  applyParams(snap.params, { silent: true, noUndo: true });
+  applyShape(snap.shape, { silent: true, noUndo: true });
   return true;
 }
 
 export function redo() {
   if (!state.redoStack.length) return false;
-  state.undoStack.push(JSON.stringify(state.model.params));
-  const params = JSON.parse(state.redoStack.pop());
-  applyParams(params, { silent: true, noUndo: true });
+  state.undoStack.push(JSON.stringify({ params: state.model.params, shape: state.shape }));
+  const snap = JSON.parse(state.redoStack.pop());
+  applyParams(snap.params, { silent: true, noUndo: true });
+  applyShape(snap.shape, { silent: true, noUndo: true });
   return true;
 }
 
-/** Apply a params object to the working model. */
+/** Apply a params object to the working model (shape untouched — use applyShape). */
 export function applyParams(params, opts = {}) {
   if (!opts.noUndo) pushUndo();
   state.model = new CarModel(sanitizeParams(params), {
     name: state.model.name,
     versionId: state.model.versionId === 'APEX-000' ? 'APEX-000' : 'WORKING',
-    unlocked: state.model.unlocked
+    unlocked: state.model.unlocked,
+    shape: state.shape
   });
   if (state.model.versionId !== 'APEX-000') {
     // working car inherits installed effects of its parent version
@@ -109,10 +116,26 @@ export function setParam(key, value, opts = {}) {
   applyParams(params, opts);
 }
 
+/** Apply a sculpted shape to the working model (Shape Studio pipeline).
+ * shape: shape object | null (null = default body). */
+export function applyShape(shape, opts = {}) {
+  if (!opts.noUndo && !opts.silent) pushUndo();
+  state.shape = shape == null ? null : sanitizeShape(shape);
+  state.model = new CarModel(deepClone(state.model.params), {
+    name: state.model.name,
+    versionId: state.model.versionId === 'APEX-000' ? 'APEX-000' : 'WORKING',
+    unlocked: state.model.unlocked,
+    shape: state.shape
+  });
+  persist();
+  events.emit('shapeChanged', { source: opts.source ?? 'studio' });
+  if (!opts.silent) events.emit('requestRefresh');
+}
+
 /** Install a version object as the current working car. */
 export function checkoutVersion(version) {
   pushUndo();
-  state.model = new CarModel(deepClone(version.params), { name: version.name, versionId: version.id, unlocked: deepClone(version.effects ?? []) });
+  state.model = new CarModel(deepClone(version.params), { name: version.name, versionId: version.id, unlocked: deepClone(version.effects ?? []), shape: state.shape });
   persist();
   events.emit('paramsChanged', { source: 'checkout' });
   events.emit('requestRefresh');
@@ -120,7 +143,7 @@ export function checkoutVersion(version) {
 
 export function resetToBaseline() {
   pushUndo();
-  state.model = new CarModel({ ...BASE.params }, { name: 'APEX-001 Baseline', versionId: 'APEX-000' });
+  state.model = new CarModel({ ...BASE.params }, { name: 'APEX-001 Baseline', versionId: 'APEX-000', shape: state.shape });
   persist();
   events.emit('paramsChanged', { source: 'reset' });
   events.emit('requestRefresh');
@@ -133,6 +156,7 @@ export function exportJSON() {
     schemaVersion: 1,
     exported: new Date().toISOString(),
     params: state.model.params,
+    shape: state.shape,
     modelName: state.model.name,
     programme: state.programme,
     settings: state.settings,

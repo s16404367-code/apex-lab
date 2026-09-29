@@ -4,6 +4,7 @@
 // versions. Resources are game abstractions (documented), never car buffs.
 
 import { deepClone, rng, hashObj, fnv1a } from '../core/util.js';
+import { state } from './state.js'; // live binding (ESM cycle-safe; used only at call time)
 import { CarModel, sanitizeParams } from '../core/model.js';
 import { evalReference } from '../core/aero.js';
 import { buildGeometry } from '../core/geometry.js';
@@ -99,7 +100,7 @@ export function createPrototype(programme, baseModel, baseCal, concept, opts = {
   };
 
   // ---- prediction on the SAME solver chain (honest numbers) ----
-  const protoModel = new CarModel(params, { name: proto.id + ' ' + proto.name, unlocked: allEffects });
+  const protoModel = new CarModel(params, { shape: deepClone(state.shape), name: proto.id + ' ' + proto.name, unlocked: allEffects });
   const cal = protoModel.calibration(CAL0);
   const { meta } = buildGeometry(protoModel);
   const ref = evalReference(protoModel, cal, meta);
@@ -122,7 +123,7 @@ export function createPrototype(programme, baseModel, baseCal, concept, opts = {
 export function runPrototypeTests(programme, proto, baseModel, baseLap, opts = {}) {
   const noise = opts.correlationNoise ?? CAL0.development.correlation_noise;
   const rand = rng(proto.seed);
-  const protoModel = new CarModel(proto.params, { name: proto.name, unlocked: proto.effects });
+  const protoModel = new CarModel(proto.params, { shape: deepClone(state.shape), name: proto.name, unlocked: proto.effects });
   const cal = protoModel.calibration(CAL0);
   const { meta } = buildGeometry(protoModel);
   const ref = evalReference(protoModel, cal, meta);
@@ -136,7 +137,7 @@ export function runPrototypeTests(programme, proto, baseModel, baseLap, opts = {
   };
   const track = prepareTrack(opts.trackDef ?? KESTREL_DEF, 600);
   const lap = simulateLap(protoModel, cal, meta, track);
-  const parentModel = new CarModel(baseModel.params, { unlocked: baseModel.unlocked });
+  const parentModel = new CarModel(baseModel.params, { unlocked: baseModel.unlocked, shape: baseModel.shape });
   const parentLap = baseLap ?? simulateLap(parentModel, parentModel.calibration(CAL0), meta, track);
   proto.trackResult = {
     lapTime: lap.timeS * (1 + gaussAbst(rand) * noise * 0.25),

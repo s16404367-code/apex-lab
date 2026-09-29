@@ -72,7 +72,7 @@ export function drawBlueprint(canvas, model, view = 'side') {
     }
 
     // ---------- mesh edges (true projection) ----------
-    const COL = { floor: '#3f8cff', diffuser: '#5ad1ff', frontWing: '#ffb454', rearWing: '#ff7a6e', rearWingFlap: '#ff9a8e', wheels: '#74859b', body: '#9fb2c8', sidepod: '#8ba0ba', halo: '#c9d6e8', suspension: '#6d7f96', cooling: '#63e6b0', detail: '#5c7089', nose: '#aebfd4', engineCover: '#9fb2c8' };
+    const COL = { floor: '#3f8cff', diffuser: '#5ad1ff', frontWing: '#ffb454', rearWing: '#ff7a6e', rearWingFlap: '#ff9a8e', wheels: '#74859b', body: '#9fb2c8', sidepod: '#8ba0ba', halo: '#c9d6e8', suspension: '#6d7f96', cooling: '#63e6b0', detail: '#c4571e', rims: '#aab6c8', nose: '#aebfd4', engineCover: '#9fb2c8' };
     const groups = {};
     for (const q of mesh.quads) {
       const [a, b, c, d, g] = q;

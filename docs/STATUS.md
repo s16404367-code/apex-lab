@@ -1,8 +1,10 @@
 # STATUS — final engineering report (spec §121)
 
-Brutally honest, per the spec's own instruction. State: **first complete playable loop is real and tested**; the depth layers vary.
+Brutally honest, per the spec's own instruction. State: **first complete playable loop is real and tested**; the depth layers vary. **V4.2 ships the Shape Studio** — the chassis is designed by sculpting silhouette + planform curves, and the solver consumes the sculpted shape (no body-metric sliders). 42/42 tests, lint 53/53, verify:regs 14 OK.
 
 ## IMPLEMENTED (working, tested)
+
+- **SHAPE STUDIO (V4.2)**: draggable 12-point side-silhouette + plan-outline editors; the same sampled curves loft the 3D mesh, feed `shapeAero` descriptors into the solver, and travel through undo/redo, saves, JSON export and APEX2 share codes.
 
 - Parametric **CarModel** (28 parameters, 8 groups) as the single geometry source; 3D viewport, 2D blueprint, legality, aero and saves all read it.
 - **FAST aero solver** (<1 ms): FW/RW with stall + flex iterations, venturi floor with choke/stall/rake/yaw, body/wheels/cooling drag, thermal model, contribution **ledger** with two explicit interaction terms, dirty-air mode, DRS.

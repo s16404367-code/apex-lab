@@ -16,6 +16,38 @@
 - `buildGeometry` now emits named animation parts (`rearWingFlap`, `wheelFL…`, `halo`, `suspension`…) alongside the flat mesh — the blueprint, legality and solver still read the same single source of truth.
 - Service worker cache bumped to v4.1.0 (includes the vendored engine).
 
+## 4.2.0 — 2026-09-29 — SHAPE STUDIO: design the chassis, then test it
+
+### Added
+- **SHAPE STUDIO screen**: sculpt the chassis by DRAGGING two 12-point curves —
+  the side silhouette (height above floor) and the plan outline (half-width).
+  No body-metric sliders: the curve IS the design input. Live 3D viewport,
+  presets (Standard / Sleek Low-Drag / High-Load), Smooth, Reset, shape share codes.
+- `src/core/carShape.js`: station curves, Catmull-Rom sampling, clamps
+  (H 60–700 mm, W 40–660 mm), smoothing, presets, and `shapeAero` — physics
+  descriptors integrated from the curves (frontal area, fineness, deck/nose slope).
+- Shape is part of model identity: CarModel hash, clone, undo/redo snapshots,
+  localStorage persistence, JSON export, APEX2 share codes (checksummed,
+  tamper-evident), dev prototypes/versions carry the working shape.
+- Solver consumes the sculpted shape: body drag now scales with true frontal
+  area and fineness; body lift responds to deck upwash and nose droop.
+- 8 new tests (carShape + shape plumbing) — 42 total.
+
+### Changed
+- `geometry.js` V4.2: sidepods are sculpted INTO the body (one form, 2026-style);
+  cockpit inset, airbox + intake, cooling inlets morph with the sculpted width,
+  dorsal crest, T-cam, livery flash; rims split into their own `rims` group.
+- webgl viewer: procedural PMREM studio environment (real reflections, no
+  network assets), clearcoat paint materials, silver rims, livery-accent detail
+  parts, ACES tone mapping; stale sidepod/nose/engineCover groups removed.
+- DESIGN screen: BODYWORK sliders removed from the part tree (a Shape Studio
+  link replaces them); share modal issues APEX2 codes.
+
+### Fixed
+- test 30 stale frontal-area range; RW-angle lap test now checks clean-air drag
+  (the old top-speed assertion raced the stall band / DRS interaction).
+- styles.css corrupted `.btn.primary:hover` rule.
+
 ## 4.0.0 — 2026-09-29
 
 Initial complete playable build.

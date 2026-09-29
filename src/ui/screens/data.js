@@ -3,7 +3,7 @@
 import { h, clear, panel, badge, download } from '../dom.js';
 import { state, events, persist, exportJSON, importJSON, resetToBaseline } from '../../core/state.js';
 import { REGS, checkLegality } from '../../core/regulations.js';
-import { decodeShareCode, encodeShareCode } from '../../storage/sharecode.js';
+import { decodeShareCodeV2 } from '../../storage/sharecode.js';
 import { CarModel, PARAM_BY_KEY } from '../../core/model.js';
 import { lsDel, idbClear } from '../../storage/storage.js';
 import { buildGeometry } from '../../core/geometry.js';
@@ -103,13 +103,14 @@ export function settingsScreen(root) {
   const importBtn = h('button', { class: 'btn', onclick: () => importInput.click() }, 'IMPORT SAVE (JSON)');
 
   // share code import
-  const shareInput = h('input', { class: 'text-input', placeholder: 'APEX1-…' });
+  const shareInput = h('input', { class: 'text-input', placeholder: 'APEX1-… / APEX2-… (shape included)' });
   const importShare = h('button', {
     class: 'btn', onclick: () => {
-      const params = decodeShareCode(shareInput.value);
-      if (!params) { alert('Invalid share code (checksum failed).'); return; }
-      const { applyParams } = window.__apexState ?? {};
-      if (applyParams) applyParams(params, { source: 'share' });
+      const decoded = decodeShareCodeV2(shareInput.value);
+      if (!decoded) { alert('Invalid share code (checksum failed).'); return; }
+      const api = window.__apexState ?? {};
+      if (api.applyParams) api.applyParams(decoded.params, { source: 'share' });
+      if (decoded.shape && api.applyShape) api.applyShape(decoded.shape, { source: 'share' });
     }
   }, 'LOAD SHARE CODE');
 

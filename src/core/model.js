@@ -3,6 +3,8 @@
 // versions) reads the SAME parameter object. There is no second geometry system.
 
 import { clamp, hashObj, deepClone } from './util.js';
+import { defaultShape, sanitizeShape, isValidShape } from './carShape.js';
+export { defaultShape, sanitizeShape };
 
 /**
  * Parameter schema. Each entry:
@@ -116,11 +118,13 @@ export class CarModel {
     this.versionId = meta.versionId ?? null;
     this.parentId = meta.parentId ?? null;
     this.unlocked = meta.unlocked ?? []; // applied concept effects (coeffMods etc.)
-    this.hash = 'v1-' + hashObj({ p: this.params, u: this.unlocked.map((u) => u.id ?? u) });
+    // Sculpted chassis shape (SHAPE STUDIO) — part of the model identity.
+    this.shape = isValidShape(meta.shape) ? sanitizeShape(meta.shape) : defaultShape();
+    this.hash = 'v1-' + hashObj({ p: this.params, u: this.unlocked.map((u) => u.id ?? u), s: this.shape });
   }
 
   clone(meta = {}) {
-    return new CarModel(deepClone(this.params), { ...meta, unlocked: deepClone(this.unlocked), parentId: this.versionId ?? this.parentId });
+    return new CarModel(deepClone(this.params), { ...meta, unlocked: deepClone(this.unlocked), shape: deepClone(this.shape), parentId: this.versionId ?? this.parentId });
   }
 
   /** Get effective calibration = base coefficients + concept coefficient modifiers. */

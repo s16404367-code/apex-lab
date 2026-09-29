@@ -70,7 +70,7 @@ test('geometry builds a non-degenerate mesh with plausible dimensions', () => {
     for (const c of v) assert.ok(isFinite(c));
   }
   assert.ok(meta.overallWidth >= model.params.track && meta.overallWidth <= 2000 + 60);
-  assert.ok(meta.frontalArea > 0.8 && meta.frontalArea < 3);
+  assert.ok(meta.frontalArea > 0.3 && meta.frontalArea < 1.2, `frontal area ${meta.frontalArea}`);
 });
 
 test('tracks close and have finite curvature', () => {

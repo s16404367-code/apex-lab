@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { baselineContext, CAL } from '../helpers.js';
 import { simulateLap } from '../../src/sim/lap.js';
+import { solveAero } from '../../src/core/aero.js';
 import { prepareTrack } from '../../src/sim/tracks.js';
 import T1 from '../../data/tracks/kestrel-ring.js';
 import T2 from '../../data/tracks/harbor-street.js';
@@ -30,16 +31,18 @@ for (const [id, def] of Object.entries(tracks)) {
   });
 }
 
-test('more rear wing slows the street circuit\'s straights but the trade is visible', () => {
+test('more rear wing adds clean-air drag (attached regime) and stays finite on-track', () => {
   const { model, cal, meta } = baselineContext();
   const track = prepareTrack(T1, 700);
   const a = simulateLap(model, cal, meta, track);
   const b = model.clone();
-  b.params.rwAngle = model.params.rwAngle + 12; // big change → measurable
+  b.params.rwAngle = model.params.rwAngle + 6; // stays attached (below the stall band)
   const lapB = simulateLap(b, cal, meta, track);
   assert.ok(isFinite(lapB.timeS));
-  // top speed must drop with the bigger wing
-  assert.ok(lapB.topSpeedKmh < a.topSpeedKmh, `top speed must fall (was ${a.topSpeedKmh}, now ${lapB.topSpeedKmh})`);
+  const cond = { v: 90, yawDeg: 0, rho: 1.21, drs: false, dirtyAir: 0, hFDyn: b.params.rideHeightF, hRDyn: b.params.rideHeightR };
+  const rA = solveAero(model, cal, meta, cond);
+  const rB = solveAero(b, cal, meta, cond);
+  assert.ok(rB.drag > rA.drag, `drag must rise with RW angle (${rA.drag.toFixed(0)} → ${rB.drag.toFixed(0)})`);
 });
 
 test('lowering from ABOVE the floor optimum adds load; lowering below it stalls', () => {

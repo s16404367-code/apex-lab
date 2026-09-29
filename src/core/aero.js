@@ -112,11 +112,14 @@ export function solveAero(model, cal, meta, cond) {
     if (p.rwAngle > 32) notes.push(`Rear wing at ${p.rwAngle}° — approaching the stall plateau; load per degree of angle is diminishing.`);
   }
 
-  // ============ BODY ==========================================================
+  // ============ BODY — from the sculpted shape (meta.shapeAero) ==============
   const cB = cal.body;
-  const widthF = Math.pow(p.bodyWidth / 1180, cB.width_exp);
-  const taperF = cB.taper_ref - cB.taper_gain * p.noseTaper;
-  const claBody = cB.cla_m2 * (1 + cB.shoulder_lift_gain * p.sidepodShoulder) * widthF;
+  const SA = meta.shapeAero ?? {
+    frontalAreaM2: 0.6, fineness: 6.0, deckSlope: 0.02, noseSlope: 0.09, maxWidthMm: p.bodyWidth
+  };
+  const widthF = Math.pow(Math.max(SA.maxWidthMm, 600) / 1260, cB.width_exp);
+  // deck upwash and nose droop genuinely change body lift; fineness changes drag
+  const claBody = cB.cla_m2 * (1 + 2.1 * Math.max(SA.deckSlope, 0) + 0.35 * Math.max((SA.noseSlope ?? 0.09) - 0.07, 0)) * (0.75 + 0.25 * widthF);
   const dfBody = q * claBody;
 
   // ============ DRAG LEDGER ====================================================
@@ -128,8 +131,8 @@ export function solveAero(model, cal, meta, cond) {
     const arRw = (p.rwSpan / 1000) / (p.rwChord / 1000);
     let inducedRw = (claRw * claRw) / (Math.PI * arRw * cR.oswald_e);
     if (drsActive) inducedRw *= cR.drs_cd_induced_factor;
-    const floorDrag = 0.035 * claFloor * (1 + 0.5 * p.edgeWing) + (p.rearContraction < 0.75 ? (0.75 - p.rearContraction) * 0.3 : 0);
-    const bodyCda = cB.cda_base_m2 * widthF * taperF + cB.cda_rear_contraction_gain * (1 - p.rearContraction);
+    const floorDrag = 0.035 * claFloor * (1 + 0.5 * p.edgeWing);
+    const bodyCda = 1.02 * SA.frontalAreaM2 * clamp(1.34 - 0.062 * SA.fineness, 0.72, 1.3);
     const wheelDrag = cB.cda_wheels_m2 * (p.track / 1600);
     const coolCda = cal.cooling.cda_per_inlet_m2 * Math.pow(p.coolInlet, cal.cooling.inlet_exponent) * (0.75 + 0.25 * (p.coolOutlet / p.coolInlet || 1))
       + cal.cooling.brake_duct_cda_m2 * p.brakeDuct;

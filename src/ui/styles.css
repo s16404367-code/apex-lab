@@ -83,7 +83,7 @@ b { color: #fff; }
 }
 .btn:hover { border-color: var(--accent); }
 .btn.primary { background: #0e2a3d; border-color: #1d5a7a; color: var(--accent); }
-.btn.primary:hover { background: #123inline; background: #123449; }
+.btn.primary:hover { background: #123449; }
 .btn.danger { border-color: #5a2d2d; color: var(--bad); }
 .btn.small { padding: 5px 9px; font-size: 10px; }
 .btn.block { display: block; width: 100%; text-align: left; margin-bottom: 4px; }
@@ -236,3 +236,23 @@ b { color: #fff; }
   * { animation: none !important; transition: none !important; }
 }
 @media print { .nav, .topbar-actions { display: none; } }
+
+/* ===== SHAPE STUDIO (V4.2) ===== */
+.studio-layout { display: grid; grid-template-columns: minmax(340px, 1.05fr) minmax(360px, 1fr); gap: 12px; align-items: start; }
+.studio-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.curve-card { padding-bottom: 6px; }
+.curve-canvas { width: 100%; height: 210px; display: block; background: #0a0e14; border: 1px solid var(--line); border-radius: 5px; cursor: crosshair; touch-action: none; }
+.curve-xaxis { display: flex; justify-content: space-between; padding: 4px 2px 0; font: 8px ui-monospace, monospace; color: rgba(140,160,190,0.7); letter-spacing: 0.4px; }
+.curve-xaxis span { transform: translateX(0); }
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-row .chip { text-transform: uppercase; letter-spacing: 0.6px; }
+.studio-viewport { min-height: 430px; }
+.studio-viewport .viewport { min-height: 430px; }
+.stat-rows { display: flex; flex-direction: column; gap: 3px; }
+.stat-row { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); padding: 2px 0; border-bottom: 1px dashed rgba(120,150,180,0.12); }
+.stat-row b { color: var(--text); font-variant-numeric: tabular-nums; }
+.stat-sep { height: 6px; }
+.tree-hint { font-size: 10px; color: var(--muted); padding: 6px 8px; border-left: 2px solid #ffd166; margin: 6px 0; background: rgba(255,209,102,0.06); }
+.tree-item.studio-link { border-color: rgba(255,209,102,0.45); color: #ffd166; margin-bottom: 6px; }
+.tree-item.studio-link:hover { background: rgba(255,209,102,0.08); }
+@media (max-width: 980px) { .studio-layout { grid-template-columns: 1fr; } }

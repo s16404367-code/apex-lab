@@ -7,7 +7,7 @@ import { PARAM_SCHEMA, GROUPS, PARAM_BY_KEY, boundsFor } from '../../core/model.
 import { carContext, solveAt } from '../common.js';
 import { createViewer } from '../../render/viewer.js';
 import { drawBlueprint } from '../../render/blueprint.js';
-import { encodeShareCode } from '../../storage/sharecode.js';
+import { encodeShareCodeV2 } from '../../storage/sharecode.js';
 
 const GROUP_LABELS = {
   chassis: 'Chassis & Platform', suspension: 'Suspension', frontWing: 'Front Wing',
@@ -16,6 +16,7 @@ const GROUP_LABELS = {
 
 export function designScreen(root) {
   const ctx = carContext();
+  const BODY_KEYS = new Set(PARAM_SCHEMA.filter((p) => p.group === 'body').map((p) => p.key));
   const prev = designScreen._lastSnapshot;
   const snapshot = JSON.stringify(ctx.model.params);
 
@@ -28,7 +29,14 @@ export function designScreen(root) {
   const tree = h('div', { class: 'part-tree' });
   tree.appendChild(h('div', { class: 'panel-title' }, 'PART TREE'));
   const groupBtns = {};
+  const studioItem = h('button', { class: 'tree-item studio-link', onclick: () => { location.hash = 'studio'; } },
+    h('span', { class: 'tree-dot', style: { background: '#ffd166' } }),
+    'SHAPE STUDIO — sculpt chassis',
+    h('span', { class: 'tree-count' }, '✎')
+  );
+  tree.appendChild(studioItem);
   for (const g of GROUPS) {
+    if (g === 'body') continue; // bodywork is SCULPTED in Shape Studio — no metric sliders
     const count = PARAM_SCHEMA.filter((p) => p.group === g).length;
     const b = h('button', { class: 'tree-item', 'data-group': g, onclick: () => selectGroup(g) },
       h('span', { class: 'tree-dot', style: { background: treeColor(g) } }),
@@ -38,6 +46,7 @@ export function designScreen(root) {
     groupBtns[g] = b;
     tree.appendChild(b);
   }
+  tree.appendChild(h('div', { class: 'tree-hint' }, 'Bodywork shape lives in SHAPE STUDIO — design it there, then test here.'));
   tree.appendChild(h('div', { class: 'tree-actions' },
     h('button', { class: 'btn small', onclick: () => { blueprintModal(); } }, 'BLUEPRINT 2D'),
     h('button', { class: 'btn small', onclick: () => { pushUndo(); applyParams({ ...state.model.params, ...{} }, { silent: false }); } }, 'SNAPSHOT'),
@@ -189,13 +198,13 @@ export function designScreen(root) {
   }
 
   function shareModal() {
-    const code = encodeShareCode(state.model.params);
+    const code = encodeShareCodeV2(state.model.params, state.shape);
     const overlayEl = h('div', { class: 'modal-overlay', onclick: (e) => { if (e.target === overlayEl) overlayEl.remove(); } });
     const input = h('input', { class: 'text-input', value: code, readonly: 'readonly' });
     input.addEventListener('focus', () => input.select());
     const box = h('div', { class: 'modal' },
-      h('div', { class: 'panel-title' }, 'SHARE CODE — car geometry, no server involved'),
-      h('p', { class: 'hint' }, 'Anyone can paste this into SETTINGS → IMPORT SHARE CODE to reconstruct the exact design. Checksum-verified.'),
+      h('div', { class: 'panel-title' }, 'SHARE CODE — car + sculpted shape, no server involved'),
+      h('p', { class: 'hint' }, 'Anyone can paste this into SETTINGS → LOAD SHARE CODE to reconstruct the exact design. Checksum-verified.'),
       input,
       h('div', { class: 'modal-actions' },
         h('button', { class: 'btn', onclick: () => { navigator.clipboard?.writeText(code); } }, 'COPY'),

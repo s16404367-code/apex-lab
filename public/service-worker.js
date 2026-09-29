@@ -1,5 +1,5 @@
 // APEX LAB service worker — cache-first, offline after first load (spec §78).
-const CACHE = 'apexlab-v4.1.0';
+const CACHE = 'apexlab-v4.2.0';
 const CORE = [
   './', './index.html',
   './src/main.js', './src/ui/styles.css',

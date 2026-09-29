@@ -9,25 +9,23 @@ import { buildGeometry } from '../core/geometry.js';
 import { rad } from '../core/util.js';
 
 const MAT_DEF = {
-  body:        { color: 0x161c28, metalness: 0.45, roughness: 0.42 },
-  sidepod:     { color: 0x151b26, metalness: 0.45, roughness: 0.44 },
+  body:        { color: 0x1a2331, metalness: 0.5,  roughness: 0.32, clearcoat: 0.65, clearcoatRoughness: 0.22 },
   floor:       { color: 0x111724, metalness: 0.35, roughness: 0.6 },
   diffuser:    { color: 0x0f141f, metalness: 0.35, roughness: 0.62 },
-  frontWing:   { color: 0x1a2332, metalness: 0.4,  roughness: 0.38 },
-  rearWing:    { color: 0x1a2332, metalness: 0.4,  roughness: 0.38 },
-  rearWingFlap:{ color: 0x1d2838, metalness: 0.4,  roughness: 0.35 },
-  wheels:      { color: 0x0e1116, metalness: 0.1,  roughness: 0.92 },
-  suspension:  { color: 0x2a3140, metalness: 0.65, roughness: 0.35 },
-  halo:        { color: 0x0d131d, metalness: 0.7,  roughness: 0.3 },
+  frontWing:   { color: 0x1e2a3d, metalness: 0.45, roughness: 0.34, clearcoat: 0.5, clearcoatRoughness: 0.25 },
+  rearWing:    { color: 0x1e2a3d, metalness: 0.45, roughness: 0.34, clearcoat: 0.5, clearcoatRoughness: 0.25 },
+  rearWingFlap:{ color: 0x223049, metalness: 0.45, roughness: 0.32, clearcoat: 0.5, clearcoatRoughness: 0.25 },
+  wheels:      { color: 0x101318, metalness: 0.05, roughness: 0.94 },
+  rims:        { color: 0x9aa7b8, metalness: 0.92, roughness: 0.26 },
+  suspension:  { color: 0x2a3140, metalness: 0.7,  roughness: 0.32 },
+  halo:        { color: 0x0d131d, metalness: 0.75, roughness: 0.26 },
   cooling:     { color: 0x04060a, metalness: 0.0,  roughness: 1.0 },
-  detail:      { color: 0x33415a, metalness: 0.5,  roughness: 0.4 },
-  nose:        { color: 0x161c28, metalness: 0.45, roughness: 0.42 },
-  engineCover: { color: 0x161c28, metalness: 0.45, roughness: 0.42 }
+  detail:      { color: 0xc4571e, metalness: 0.3,  roughness: 0.42 } // livery accent (flash, crest, mirrors)
 };
 
 // parts that get smooth (welded) normals
-const SMOOTH_PARTS = new Set(['body', 'sidepod', 'floor', 'diffuser', 'frontWing', 'rearWing', 'rearWingFlap', 'nose', 'engineCover']);
-const PART_ORDER = ['body', 'nose', 'engineCover', 'sidepod', 'floor', 'diffuser', 'frontWing', 'rearWing', 'rearWingFlap', 'halo', 'suspension', 'detail', 'cooling', 'wheels'];
+const SMOOTH_PARTS = new Set(['body', 'floor', 'diffuser', 'frontWing', 'rearWing', 'rearWingFlap']);
+const PART_ORDER = ['body', 'floor', 'diffuser', 'frontWing', 'rearWing', 'rearWingFlap', 'halo', 'suspension', 'detail', 'cooling', 'rims', 'wheels'];
 
 function partGeometry(mesh, group, smooth) {
   const faces = [];
@@ -109,6 +107,29 @@ export function createWebGLViewer(canvas) {
   scene.background = new THREE.Color(0x0a0e14);
   scene.fog = new THREE.Fog(0x0a0e14, 12000, 26000);
 
+  // Procedural "studio HDRI": emissive light panels baked through PMREM.
+  // Gives the paint real reflections without any network asset.
+  try {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const env = new THREE.Scene();
+    const strip = (w, h2, x, y, z, lx, ly, lz, c, i2) => {
+      const mnew = new THREE.Mesh(new THREE.PlaneGeometry(w, h2), new THREE.MeshBasicMaterial({ color: c }));
+      mnew.material.color.multiplyScalar(i2);
+      mnew.position.set(x, y, z);
+      mnew.lookAt(lx, ly, lz);
+      env.add(mnew);
+    };
+    strip(9000, 1400, 0, 0, 5200, 0, 0, 0, 0xffffff, 5.5);      // overhead strip
+    strip(2400, 5200, 6800, 0, 1400, 0, 0, 0, 0xdfe9ff, 2.2);   // side softbox R
+    strip(2400, 5200, -6800, 0, 1400, 0, 0, 0, 0x9fc3ff, 1.6);  // side softbox L (cool)
+    strip(5200, 900, 0, -6800, 700, 0, 0, 0, 0x35507a, 1.1);    // floor bounce
+    strip(1200, 1200, 2600, 5200, 2600, 0, 0, 0, 0xffffff, 3.2); // kicker
+    scene.environment = pmrem.fromScene(env, 0.035).texture;
+    pmrem.dispose();
+  } catch (e) {
+    console.warn('[apexlab] env bake skipped:', e);
+  }
+
   // ---------------- camera + custom z-up orbit controls ----------------
   const camera = new THREE.PerspectiveCamera(38, 1, 10, 60000);
   camera.up.set(0, 0, 1);
@@ -152,7 +173,7 @@ export function createWebGLViewer(canvas) {
   // ---------------- ground ----------------
   const ground = new THREE.Mesh(
     new THREE.CircleGeometry(11000, 56).rotateX(Math.PI / 2),
-    new THREE.MeshStandardMaterial({ color: 0x0b101a, roughness: 0.95, metalness: 0 })
+    new THREE.MeshStandardMaterial({ color: 0x0b101a, roughness: 0.82, metalness: 0.08, envMapIntensity: 0.35 })
   );
   ground.receiveShadow = true;
   scene.add(ground);
@@ -215,7 +236,10 @@ export function createWebGLViewer(canvas) {
       const geom = partGeometry(mesh, part, SMOOTH_PARTS.has(part));
       if (!geom) continue;
       const def = MAT_DEF[part] ?? MAT_DEF.body;
-      const mat = new THREE.MeshStandardMaterial({ color: def.color, metalness: def.metalness, roughness: def.roughness });
+      const matParams = { color: def.color, metalness: def.metalness, roughness: def.roughness, envMapIntensity: 1.0 };
+      const mat = def.clearcoat
+        ? new THREE.MeshPhysicalMaterial({ ...matParams, clearcoat: def.clearcoat, clearcoatRoughness: def.clearcoatRoughness })
+        : new THREE.MeshStandardMaterial(matParams);
       const meshObj = new THREE.Mesh(geom, mat);
       meshObj.castShadow = true;
       meshObj.receiveShadow = false;
@@ -362,7 +386,7 @@ export function createWebGLViewer(canvas) {
         floor: P.cla.floor / 2.4,
         diffuser: P.cla.floor / 2.6,
         body: P.cla.body / 0.5,
-        sidepod: P.cla.body / 0.55,
+        rims: 0.05,
         nose: P.cla.body / 0.6,
         engineCover: P.cla.body / 0.6,
         wheels: 0.45,
