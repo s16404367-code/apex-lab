@@ -5,7 +5,7 @@ import { h, clear, sliderRow, badge, panel, fmtN, download } from '../dom.js';
 import { state, setParam, applyParams, pushUndo, undo as doUndo, redo as doRedo, events } from '../../core/state.js';
 import { PARAM_SCHEMA, GROUPS, PARAM_BY_KEY, boundsFor } from '../../core/model.js';
 import { carContext, solveAt } from '../common.js';
-import { createViewer } from '../../render/engine3d.js';
+import { createViewer } from '../../render/viewer.js';
 import { drawBlueprint } from '../../render/blueprint.js';
 import { encodeShareCode } from '../../storage/sharecode.js';
 
@@ -53,9 +53,12 @@ export function designScreen(root) {
     h('span', { class: 'vsep' }),
     toggleBtn('ENVELOPE', true, (v) => draw()),
     toggleBtn('PRESSURE', false, (v) => draw()),
-    toggleBtn('FLOW', false, (v) => draw(), state.settings.reducedMotion ? 'reduced motion: animation off' : null),
+    toggleBtn('FLOW', false, (v) => draw(), 'animated flow particles'),
     toggleBtn('FORCES', true, (v) => draw()),
-    toggleBtn('WIRE', true, (v) => draw())
+    toggleBtn('WIRE', true, (v) => draw()),
+    h('span', { class: 'vsep' }),
+    toggleBtn('TURNTABLE', false, (v) => draw(), 'auto-orbit showcase'),
+    toggleBtn('DRS OPEN', false, (v) => draw(), 'animate the DRS actuator')
   );
   viewerWrap.appendChild(viewBar);
 
@@ -144,6 +147,8 @@ export function designScreen(root) {
       flow: viewBar.querySelector('[data-t="FLOW"]')?.classList.contains('on') ?? false,
       forces: viewBar.querySelector('[data-t="FORCES"]')?.classList.contains('on') ? { dfFront: ctx.ref.df.front, dfRear: ctx.ref.df.rear, drag: ctx.ref.drag } : null,
       wireframe: viewBar.querySelector('[data-t="WIRE"]')?.classList.contains('on') ?? true,
+      turntable: viewBar.querySelector('[data-t="TURNTABLE"]')?.classList.contains('on') ?? false,
+      drs: viewBar.querySelector('[data-t="DRS OPEN"]')?.classList.contains('on') ?? false,
       reducedMotion: state.settings.reducedMotion
     };
     viewer.render(state.model, overlay);

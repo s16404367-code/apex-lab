@@ -82,7 +82,7 @@ docs/                      MODEL · REGULATIONS · DEVELOPMENT · DECISIONS · S
 
 ## Tech
 
-Vanilla ES-modules JavaScript, zero dependencies. Canvas-2D 3D renderer (painter's algorithm, engineering aesthetic), Canvas-2D charts, `node:test` suite, GitHub Actions CI. TypeScript checking is available optionally (`tsconfig.json` with `checkJs` — `npm i -D typescript && npm run typecheck`). Rationale in [docs/DECISIONS.md](docs/DECISIONS.md).
+Vanilla ES-modules JavaScript, zero npm dependencies. **WebGL 3D via Three.js r170, vendored locally** (`public/vendor/three.module.min.js`, MIT — no CDN, fully offline), Canvas-2D fallback when WebGL is unavailable, Canvas-2D charts, `node:test` suite, GitHub Actions CI. TypeScript checking is available optionally (`tsconfig.json` with `checkJs`). Rationale in [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## License
 

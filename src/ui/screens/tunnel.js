@@ -165,7 +165,12 @@ export function tunnelScreen(root) {
       ], { xlabel: 'speed km/h', height: 190, vline: cond.v * 3.6 });
     } else lineChart(chartSpeed, [{ points: [{ x: 0, y: 0 }] }], {});
 
-    tunnelViewer.render(state.model, { pressure: r, envelope: false, flow: true, forces: { dfFront: r.df.front, dfRear: r.df.rear, drag: r.drag }, wireframe: true, reducedMotion: state.settings.reducedMotion });
+    tunnelViewer.render(state.model, {
+      pressure: r, envelope: false, flow: true,
+      forces: { dfFront: r.df.front, dfRear: r.df.rear, drag: r.drag },
+      wireframe: true, rollingRoad: true, tunnelSpeed: cond.v, drs: cond.drs,
+      reducedMotion: state.settings.reducedMotion
+    });
   }
 
   run();
@@ -189,4 +194,4 @@ function bigReadout(label, unit) {
 function createViewerTunnel(canvas) {
   return makeViewer(canvas);
 }
-import { createViewer as makeViewer } from '../../render/engine3d.js';
+import { createViewer as makeViewer } from '../../render/viewer.js';

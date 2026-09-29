@@ -1,9 +1,10 @@
 // APEX LAB service worker — cache-first, offline after first load (spec §78).
-const CACHE = 'apexlab-v4.0.0';
+const CACHE = 'apexlab-v4.1.0';
 const CORE = [
   './', './index.html',
   './src/main.js', './src/ui/styles.css',
-  './public/manifest.webmanifest', './public/icons/icon.svg'
+  './public/manifest.webmanifest', './public/icons/icon.svg',
+  './public/vendor/three.module.min.js'
 ];
 
 self.addEventListener('install', (e) => {

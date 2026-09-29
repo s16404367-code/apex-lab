@@ -1,123 +1,178 @@
-// APEX LAB — 2D engineering blueprint (spec §12).
-// Side / top / front schematics with auto-calculated dimensions from geometry.
+// APEX LAB — 2D engineering blueprint (spec §12). V4.1:
+// TRUE orthographic projections of the actual CarModel mesh (side/top/front),
+// mm grid, auto-calculated dimensions, title block.
+// Draws only after layout (requestAnimationFrame) so the canvas is never 0px
+// (this was the blank-blueprint bug in v4.0).
 
 import { buildGeometry } from '../core/geometry.js';
 
 export function drawBlueprint(canvas, model, view = 'side') {
-  const ctx = canvas.getContext('2d');
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const r = canvas.getBoundingClientRect();
-  canvas.width = r.width * dpr;
-  canvas.height = 340 * dpr;
-  canvas.style.height = '340px';
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const W = r.width, H = 340;
-  ctx.fillStyle = '#0b1322';
-  ctx.fillRect(0, 0, W, H);
-  const { meta } = buildGeometry(model);
+  const { mesh, meta } = buildGeometry(model);
   const p = model.params;
 
-  // mm grid
-  ctx.strokeStyle = 'rgba(80,120,170,0.10)';
-  const scale = W / 6200; // px per mm
-  const cx = W / 2, ground = H - 42;
-  for (let mm = -3000; mm <= 3000; mm += 250) {
-    const x = cx + mm * scale;
-    ctx.beginPath(); ctx.moveTo(x, 8); ctx.lineTo(x, H - 30); ctx.stroke();
-  }
-  for (let mm = 0; mm <= 1200; mm += 250) {
-    const y = ground - mm * scale;
-    ctx.beginPath(); ctx.moveTo(8, y); ctx.lineTo(W - 8, y); ctx.stroke();
-  }
+  const paint = () => {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const cssW = Math.max(canvas.clientWidth || 900, 320);
+    const cssH = parseInt(canvas.getAttribute('data-h') || '360', 10);
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    canvas.style.height = cssH + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = cssW, H = cssH;
 
-  ctx.lineWidth = 1.6;
-  const rect = (x0mm, x1mm, z0mm, z1mm, color, label) => {
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color + '22';
-    const x0 = cx + x0mm * scale, x1 = cx + x1mm * scale;
-    const y0 = ground - z1mm * scale, y1 = ground - z0mm * scale;
-    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
-    ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
-    if (label && x1 - x0 > 46) {
-      ctx.fillStyle = color;
-      ctx.font = '9px ui-monospace,monospace';
-      ctx.fillText(label, x0 + 4, y0 + 11);
-    }
-  };
+    // ---------- sheet ----------
+    ctx.fillStyle = '#0b1322';
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = '#1d2a3d';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(6.5, 6.5, W - 13, H - 13);
 
-  const dim = (x0mm, x1mm, ymm, label, color = '#7d93ad') => {
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    const x0 = cx + x0mm * scale, x1 = cx + x1mm * scale;
-    const y = ground - ymm * scale;
-    ctx.beginPath();
-    ctx.moveTo(x0, y - 4); ctx.lineTo(x0, y + 4);
-    ctx.moveTo(x1, y - 4); ctx.lineTo(x1, y + 4);
-    ctx.moveTo(x0, y); ctx.lineTo(x1, y);
-    ctx.stroke();
-    ctx.font = '10px ui-monospace,monospace';
-    const txt = label;
-    ctx.fillText(txt, (x0 + x1) / 2 - ctx.measureText(txt).width / 2, y - 5);
-  };
+    // extents per view
+    const xMin = meta.xR - 320 - p.rwChord - 80, xMax = meta.noseTip + 60;
+    const halfW = meta.overallWidth / 2;
+    const zMax = 1400;
+    const cfg = {
+      side: { w: xMax - xMin, h: zMax, label: 'SIDE ELEVATION' },
+      top: { w: xMax - xMin, h: meta.overallWidth + 400, label: 'PLAN VIEW' },
+      front: { w: meta.overallWidth + 400, h: zMax, label: 'FRONT ELEVATION' }
+    }[view] ?? { w: xMax - xMin, h: zMax, label: 'SIDE ELEVATION' };
 
-  if (view === 'side' || view === 'all') {
-    // floor, body silhouette, wings, wheels
-    rect(-p.wheelbase / 2 - p.diffLen + 250, p.wheelbase / 2 - 260, (p.rideHeightF + p.rideHeightR) / 2, (p.rideHeightF + p.rideHeightR) / 2 + 30, '#3f8cff', 'FLOOR');
-    rect(-p.wheelbase / 2 - p.diffLen + 250, -p.wheelbase / 2 - p.diffLen + 250 + p.diffLen, p.diffExitH * 0.5, p.diffExitH + 20, '#5ad1ff', 'DIFF');
-    rect(p.wheelbase / 2 + 620 - p.fwChord, p.wheelbase / 2 + 620, p.fwHeight, p.fwHeight + 70, '#ffb454', 'FW');
-    rect(-p.wheelbase / 2 - 320 - p.rwChord, -p.wheelbase / 2 - 320, p.rwHeight, p.rwHeight + 110, '#ff7a6e', 'RW');
-    rect(-p.wheelbase / 2 - 350, p.wheelbase / 2 + 200, (p.rideHeightF + p.rideHeightR) / 2 + 40, (p.rideHeightF + p.rideHeightR) / 2 + 420, '#9fb2c8', 'BODY');
-    // wheels
-    for (const [x, r0] of [[p.wheelbase / 2, 330], [-p.wheelbase / 2, 340]]) {
-      ctx.strokeStyle = '#8fa3bb';
-      ctx.fillStyle = 'rgba(57,66,78,0.8)';
-      ctx.beginPath();
-      ctx.arc(cx + x * scale, ground - r0 * scale, r0 * scale, 0, Math.PI * 2);
-      ctx.fill(); ctx.stroke();
-    }
-    dim(-p.wheelbase / 2, p.wheelbase / 2, -140, `WHEELBASE ${p.wheelbase} mm`);
-    dim(p.wheelbase / 2 + 620 - p.fwChord, p.wheelbase / 2 + 620, p.fwHeight + 150, `FW ${p.fwChord}c/${p.fwAngle}°`, '#ffb454');
-    dim(-p.wheelbase / 2 - 320 - p.rwChord, -p.wheelbase / 2 - 320, p.rwHeight + 180, `RW ${p.rwChord}c/${p.rwAngle}°`, '#ff7a6e');
-    dim(0, 0, 0, '');
-    ctx.strokeStyle = '#7d93ad';
-    ctx.fillStyle = '#7d93ad';
-    ctx.font = '10px ui-monospace,monospace';
-    ctx.fillText(`RH-F ${p.rideHeightF} mm`, cx - p.wheelbase / 2 * scale - 60, ground - 6);
-    ctx.fillText(`RH-R ${p.rideHeightR} mm`, cx + p.wheelbase / 2 * scale - 10, ground - 6);
-    ctx.fillText(`RAKE ${meta.rakeDeg.toFixed(2)}°`, cx + 60 * scale, ground - (p.rideHeightF + 60) * scale);
-  }
-  if (view === 'top' || view === 'all') {
-    const y0 = 26;
-    const tw = (mm) => mm * (scale * 0.9);
-    ctx.strokeStyle = '#3f8cff';
-    ctx.strokeRect(cx - tw(p.floorWidth) / 2, y0 + 150, tw(p.floorWidth), 240);
-    ctx.fillStyle = '#3f8cff33';
-    ctx.fillRect(cx - tw(p.floorWidth) / 2, y0 + 150, tw(p.floorWidth), 240);
-    ctx.strokeStyle = '#9fb2c8';
-    ctx.strokeRect(cx - tw(p.bodyWidth) / 2, y0 + 60, tw(p.bodyWidth), 260);
-    ctx.strokeStyle = '#ffb454';
-    ctx.beginPath();
-    ctx.moveTo(cx - tw(p.fwSpan) / 2, y0 + 30); ctx.lineTo(cx + tw(p.fwSpan) / 2, y0 + 30);
-    ctx.stroke();
-    ctx.strokeStyle = '#ff7a6e';
-    ctx.beginPath();
-    ctx.moveTo(cx - tw(p.rwSpan) / 2, y0 + 430); ctx.lineTo(cx + tw(p.rwSpan) / 2, y0 + 430);
-    ctx.stroke();
-    ctx.fillStyle = '#8fa3bb';
-    for (const yw of [y0 + 30, y0 + 430]) {
-      for (const s of [-1, 1]) {
-        ctx.beginPath();
-        ctx.arc(cx + s * tw(p.track) / 2, yw, tw(330), 0, Math.PI * 2);
-        ctx.fill();
+    const padL = 50, padR = 44, padT = 34, padB = 40;
+    const scale = Math.max(Math.min((W - padL - padR) / cfg.w, (H - padT - padB) / cfg.h), 0.02);
+    const xMid = (xMin + xMax) / 2;
+
+    // mapping (car coords → canvas)
+    const X = (x) => W / 2 + (x - xMid) * scale;              // side/top horizontal
+    const Yz = (z) => H - padB - z * scale;                   // side/front vertical
+    const Yy = (y) => H - padB - (y + cfg.h / 2) * scale;     // top vertical (lateral)
+    const Xy = (y) => W / 2 + y * scale;                      // front horizontal (lateral)
+
+    // ---------- grid ----------
+    ctx.strokeStyle = 'rgba(70,110,160,0.10)';
+    ctx.lineWidth = 1;
+    if (view !== 'front') {
+      for (let mm = Math.ceil(xMin / 500) * 500; mm <= xMax; mm += 500) {
+        ctx.beginPath(); ctx.moveTo(X(mm), padT - 10); ctx.lineTo(X(mm), H - padB + 10); ctx.stroke();
       }
     }
-    ctx.fillStyle = '#7d93ad';
+    if (view === 'top') {
+      for (let mm = Math.ceil(-cfg.h / 2 / 250) * 250; mm <= cfg.h / 2; mm += 250) {
+        ctx.beginPath(); ctx.moveTo(padL - 10, Yy(mm)); ctx.lineTo(W - padR + 10, Yy(mm)); ctx.stroke();
+      }
+    } else {
+      for (let mm = 0; mm <= zMax; mm += 250) {
+        ctx.beginPath(); ctx.moveTo(padL - 10, Yz(mm)); ctx.lineTo(W - padR + 10, Yz(mm)); ctx.stroke();
+      }
+      if (view === 'front') {
+        for (let mm = Math.ceil(-halfW / 250) * 250; mm <= halfW; mm += 250) {
+          ctx.beginPath(); ctx.moveTo(Xy(mm), padT - 10); ctx.lineTo(Xy(mm), H - padB + 10); ctx.stroke();
+        }
+      }
+    }
+
+    // ---------- mesh edges (true projection) ----------
+    const COL = { floor: '#3f8cff', diffuser: '#5ad1ff', frontWing: '#ffb454', rearWing: '#ff7a6e', rearWingFlap: '#ff9a8e', wheels: '#74859b', body: '#9fb2c8', sidepod: '#8ba0ba', halo: '#c9d6e8', suspension: '#6d7f96', cooling: '#63e6b0', detail: '#5c7089', nose: '#aebfd4', engineCover: '#9fb2c8' };
+    const groups = {};
+    for (const q of mesh.quads) {
+      const [a, b, c, d, g] = q;
+      (groups[g] ??= []).push([a, b], [b, c], [c, d], [d, a]);
+    }
+    const PX = (V) => (view === 'front' ? Xy(V[1]) : X(V[0]));
+    const PY = (V) => (view === 'side' ? Yz(V[2]) : view === 'top' ? Yy(V[1]) : Yz(V[2]));
+    ctx.lineWidth = 0.7;
+    for (const [g, edges] of Object.entries(groups)) {
+      ctx.strokeStyle = (COL[g] ?? '#8899aa') + '55';
+      ctx.beginPath();
+      for (const [a, b] of edges) {
+        ctx.moveTo(PX(mesh.verts[a]), PY(mesh.verts[a]));
+        ctx.lineTo(PX(mesh.verts[b]), PY(mesh.verts[b]));
+      }
+      ctx.stroke();
+    }
+
+    // ---------- ground line ----------
+    if (view !== 'top') {
+      ctx.strokeStyle = '#3d5570';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(padL - 10, Yz(0));
+      ctx.lineTo(W - padR + 10, Yz(0));
+      ctx.stroke();
+    }
+
+    // ---------- dimensions ----------
     ctx.font = '10px ui-monospace,monospace';
-    ctx.fillText(`TRACK ${p.track} mm`, cx - tw(p.track) / 2, y0 + 470);
-    ctx.fillText(`FW SPAN ${p.fwSpan}`, cx + tw(p.fwSpan) / 2 - 90, y0 + 24);
-    ctx.fillText(`RW SPAN ${p.rwSpan}`, cx + tw(p.rwSpan) / 2 - 90, y0 + 448);
-  }
-  ctx.fillStyle = 'rgba(150,170,200,0.7)';
-  ctx.font = '10px ui-monospace,monospace';
-  ctx.fillText(`${view.toUpperCase()} VIEW — dimensions auto-derived from CarModel geometry`, 10, 14);
+    const dimH = (x0, x1, zmm, label, color = '#7d93ad') => {
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1;
+      const xa = PX([x0, 0, 0]).x === undefined ? 0 : (view === 'front' ? Xy(x0) : X(x0));
+      const xb = view === 'front' ? Xy(x1) : X(x1);
+      const y = view === 'top' ? Yy(zmm) : Yz(zmm);
+      ctx.beginPath();
+      ctx.moveTo(xa, y - 4); ctx.lineTo(xa, y + 4);
+      ctx.moveTo(xb, y - 4); ctx.lineTo(xb, y + 4);
+      ctx.moveTo(xa, y); ctx.lineTo(xb, y);
+      ctx.stroke();
+      ctx.fillText(label, (xa + xb) / 2 - ctx.measureText(label).width / 2, y - 5);
+    };
+    const dimV = (z0, z1, xmm, label, color = '#7d93ad') => {
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 1;
+      const x = view === 'front' ? Xy(xmm) : X(xmm);
+      const y0 = view === 'top' ? Yy(z0) : Yz(z0);
+      const y1 = view === 'top' ? Yy(z1) : Yz(z1);
+      ctx.beginPath();
+      ctx.moveTo(x - 4, y0); ctx.lineTo(x + 4, y0);
+      ctx.moveTo(x - 4, y1); ctx.lineTo(x + 4, y1);
+      ctx.moveTo(x, y0); ctx.lineTo(x, y1);
+      ctx.stroke();
+      ctx.save();
+      ctx.translate(x - 6, (y0 + y1) / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(label, -ctx.measureText(label).width / 2, -4);
+      ctx.restore();
+    };
+
+    if (view === 'side') {
+      dimH(-p.wheelbase / 2, p.wheelbase / 2, -140, `WHEELBASE ${p.wheelbase} mm`);
+      dimH(xMin + 80, meta.noseTip, 1330, `LENGTH ≈ ${Math.round(meta.overallLength)} mm`, '#5c7089');
+      dimV(0, p.rwHeight + 40, -p.wheelbase / 2 - 460, `RW HEIGHT ${p.rwHeight}`, '#ff7a6e');
+      dimV(0, p.rideHeightF, p.wheelbase / 2 + 130, `RH-F ${p.rideHeightF}`, '#63e6b0');
+      dimV(0, p.rideHeightR, -p.wheelbase / 2 - 130, `RH-R ${p.rideHeightR}`, '#63e6b0');
+      ctx.fillStyle = '#ffb454';
+      ctx.fillText(`FW ${p.fwChord}c × ${p.fwSpan}S @ ${p.fwAngle}°+${p.fwFlap}°`, X(p.wheelbase / 2 + 40), Yz(p.fwHeight + 210));
+      ctx.fillStyle = '#ff7a6e';
+      ctx.fillText(`RW ${p.rwChord}c @ ${p.rwAngle}° (DRS flap)`, X(-p.wheelbase / 2 - 900), Yz(p.rwHeight + 140));
+      ctx.fillStyle = '#5ad1ff';
+      ctx.fillText(`DIFFUSER ${p.diffAngle}° → exit ${p.diffExitH} mm`, X(-p.wheelbase / 2 - 480), Yz(p.diffExitH + 90));
+    }
+    if (view === 'top') {
+      dimV(-p.track / 2, p.track / 2, meta.noseTip - 200, `TRACK ${p.track} mm`);
+      dimV(-p.fwSpan / 2, p.fwSpan / 2, p.wheelbase / 2 + 620, `FW SPAN ${p.fwSpan}`, '#ffb454');
+      dimV(-p.rwSpan / 2, p.rwSpan / 2, -p.wheelbase / 2 - 390, `RW SPAN ${p.rwSpan}`, '#ff7a6e');
+      dimV(-p.floorWidth / 2, p.floorWidth / 2, 100, `FLOOR ${p.floorWidth}`, '#3f8cff');
+      dimH(xMin + 80, meta.noseTip, -cfg.h / 2 + 40, `LENGTH ≈ ${Math.round(meta.overallLength)} mm`, '#5c7089');
+    }
+    if (view === 'front') {
+      dimH(-halfW, halfW, -130, `WIDTH ≈ ${Math.round(meta.overallWidth)} mm`, '#5c7089');
+      dimV(0, 950, -halfW - 140, 'REG HEIGHT 950', '#5ad1ff');
+      dimV(0, p.rwHeight + 40, halfW + 120, `RW ${p.rwHeight}`, '#ff7a6e');
+    }
+
+    // ---------- title block ----------
+    ctx.strokeStyle = '#27394f';
+    ctx.strokeRect(W - 242.5, H - 58.5, 236, 52);
+    ctx.fillStyle = '#d7e1ee';
+    ctx.font = 'bold 11px ui-monospace,monospace';
+    ctx.fillText('APEX LAB — ENGINEERING DRAWING', W - 234, H - 42);
+    ctx.fillStyle = '#8fa3bb';
+    ctx.font = '9.5px ui-monospace,monospace';
+    ctx.fillText(`${model.name} · ${cfg.label}`, W - 234, H - 29);
+    ctx.fillText('all dims auto-derived from CarModel · mm', W - 234, H - 17);
+    ctx.fillStyle = '#5c7089';
+    ctx.fillText('true orthographic projection of the simulation mesh', 14, H - 17);
+  };
+
+  // draw after layout so clientWidth is real (fixes the v4.0 blank-canvas bug)
+  if (canvas.isConnected && canvas.clientWidth > 0) requestAnimationFrame(paint);
+  else requestAnimationFrame(() => requestAnimationFrame(paint));
 }

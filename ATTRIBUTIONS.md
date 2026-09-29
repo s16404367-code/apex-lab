@@ -6,7 +6,7 @@ All source code, data, documents and artwork in this repository are original wor
 - **Teams/Staff names** (in `data/development/staff.js`): fictional persons; any resemblance to real people is coincidental.
 - **Regulations dataset**: a game ruleset inspired by the *structure* of open single-seater technical regulations. Values marked `game-default` are not official limits of any federation; the one `candidate` value (768 kg minimum mass) cites public 2026 regulation summaries and is not independently verified. See docs/REGULATIONS.md.
 - **Fonts**: system font stacks only (ui-monospace / system sans). No external font is loaded.
-- **Libraries**: none. Zero runtime dependencies by design (docs/DECISIONS.md).
+- **Libraries**: no npm dependencies. The 3D layer vendors **Three.js r170** (`public/vendor/three.module.min.js`) — Copyright © 2010-2024 Three.js authors, MIT License, https://threejs.org — served locally so the game stays fully offline (no CDN).
 - **Icons**: `public/icons/icon.svg` — original SVG.
 
 No third-party assets require attribution. If a future release adds any (fonts, models, sounds), they will be listed here with license and source.
