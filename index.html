@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>APEX LAB V4 — F1 Aero Design, Wind Tunnel & R&D</title>
+  <meta name="description" content="Regulation-constrained F1-style aerodynamic engineering sandbox: design inside the legal envelope, test in the wind tunnel, simulate laps, develop and validate upgrades. Runs entirely offline in your browser." />
+  <meta name="theme-color" content="#0a0e14" />
+  <link rel="icon" href="public/icons/icon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="public/manifest.webmanifest" />
+  <link rel="stylesheet" href="src/ui/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <noscript>APEX LAB requires JavaScript — it is a browser-based engineering sandbox.</noscript>
+  </div>
+  <script type="module" src="src/main.js"></script>
+  <script>
+    // service worker: offline support after first load (spec §78)
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('public/service-worker.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>

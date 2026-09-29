@@ -1,0 +1,12 @@
+{
+  "name": "APEX LAB V4",
+  "short_name": "APEX LAB",
+  "description": "F1-style aerodynamic engineering sandbox: design, wind tunnel, lap sim, R&D development.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0a0e14",
+  "theme_color": "#0a0e14",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
